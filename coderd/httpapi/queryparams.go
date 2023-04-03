@@ -51,6 +51,19 @@ func (p *QueryParamParser) addParsed(key string) {
 	p.Parsed[key] = true
 }
 
+func (p *QueryParamParser) UInt(vals url.Values, def uint, queryParam string) uint {
+	v := p.Int(vals, int(def), queryParam)
+
+	if v < 0 {
+		p.Errors = append(p.Errors, codersdk.ValidationError{
+			Field:  queryParam,
+			Detail: fmt.Sprintf("Query param %q must be a valid positive integer", queryParam),
+		})
+		return 0
+	}
+	return uint(v)
+}
+
 func (p *QueryParamParser) Int(vals url.Values, def int, queryParam string) int {
 	v, err := parseQueryParam(p, vals, strconv.Atoi, def, queryParam)
 	if err != nil {
