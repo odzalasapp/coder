@@ -501,7 +501,7 @@ func TestRenderStaticErrorPage(t *testing.T) {
 
 	rw := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/", nil)
-	site.RenderStaticErrorPage(rw, r, d)
+	site.RenderStaticErrorPage(r.Context(), rw, d)
 
 	resp := rw.Result()
 	defer resp.Body.Close()

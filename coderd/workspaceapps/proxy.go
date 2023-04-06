@@ -121,7 +121,7 @@ func (s *Server) Attach(r chi.Router) {
 // through a relative URL path.
 func (s *Server) workspaceAppsProxyPath(rw http.ResponseWriter, r *http.Request) {
 	if s.DeploymentValues.DisablePathApps.Value() {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(r.Context(), rw, site.ErrorPageData{
 			Status:       http.StatusUnauthorized,
 			Title:        "Unauthorized",
 			Description:  "Path-based applications are disabled on this Coder deployment by the administrator.",
@@ -134,7 +134,7 @@ func (s *Server) workspaceAppsProxyPath(rw http.ResponseWriter, r *http.Request)
 	// We don't support @me in path apps since it requires the database to
 	// lookup the username from token. We used to redirect by doing this lookup.
 	if chi.URLParam(r, "user") == codersdk.Me {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(r.Context(), rw, site.ErrorPageData{
 			Status:       http.StatusNotFound,
 			Title:        "Application Not Found",
 			Description:  "Applications must be accessed with the full username, not @me.",
@@ -248,7 +248,7 @@ func (s *Server) SubdomainAppMW(middlewares ...func(http.Handler) http.Handler) 
 				token, err := s.AppSecurityKey.DecryptAPIKey(encryptedAPIKey)
 				if err != nil {
 					s.Logger.Debug(ctx, "could not decrypt API key", slog.Error(err))
-					site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+					site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 						Status:      http.StatusBadRequest,
 						Title:       "Bad Request",
 						Description: "Could not decrypt API key. Please remove the query parameter and try again.",
@@ -340,7 +340,7 @@ func (s *Server) parseHostname(rw http.ResponseWriter, r *http.Request, next htt
 	// Parse the application URL from the subdomain.
 	app, err := httpapi.ParseSubdomainAppURL(subdomain)
 	if err != nil {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(r.Context(), rw, site.ErrorPageData{
 			Status:       http.StatusBadRequest,
 			Title:        "Invalid Application URL",
 			Description:  fmt.Sprintf("Could not parse subdomain application URL %q: %s", subdomain, err.Error()),
@@ -362,7 +362,7 @@ func (s *Server) setWorkspaceAppCookie(rw http.ResponseWriter, r *http.Request, 
 		// This should be impossible as we verify the app hostname on
 		// startup, but we'll check anyways.
 		s.Logger.Error(r.Context(), "could not split invalid app hostname", slog.F("hostname", s.Hostname))
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(r.Context(), rw, site.ErrorPageData{
 			Status:       http.StatusInternalServerError,
 			Title:        "Internal Server Error",
 			Description:  "The app is configured with an invalid app wildcard hostname. Please contact an administrator.",
@@ -406,7 +406,7 @@ func (s *Server) proxyWorkspaceApp(rw http.ResponseWriter, r *http.Request, appT
 
 	appURL, err := url.Parse(appToken.AppURL)
 	if err != nil {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 			Status:       http.StatusBadRequest,
 			Title:        "Bad Request",
 			Description:  fmt.Sprintf("Application has an invalid URL %q: %s", appToken.AppURL, err.Error()),
@@ -461,7 +461,7 @@ func (s *Server) proxyWorkspaceApp(rw http.ResponseWriter, r *http.Request, appT
 
 	proxy := httputil.NewSingleHostReverseProxy(appURL)
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 			Status:       http.StatusBadGateway,
 			Title:        "Bad Gateway",
 			Description:  "Failed to proxy request to application: " + err.Error(),
@@ -472,7 +472,7 @@ func (s *Server) proxyWorkspaceApp(rw http.ResponseWriter, r *http.Request, appT
 
 	conn, release, err := s.WorkspaceConnCache.Acquire(appToken.AgentID)
 	if err != nil {
-		site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+		site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 			Status:       http.StatusBadGateway,
 			Title:        "Bad Gateway",
 			Description:  "Could not connect to workspace agent: " + err.Error(),

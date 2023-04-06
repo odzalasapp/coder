@@ -1,6 +1,7 @@
 package workspaceapps
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 
@@ -10,10 +11,10 @@ import (
 
 // WriteWorkspaceApp404 writes a HTML 404 error page for a workspace app. If
 // appReq is not nil, it will be used to log the request details at debug level.
-func WriteWorkspaceApp404(log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, r *http.Request, appReq *Request, msg string) {
+func WriteWorkspaceApp404(ctx context.Context, log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, appReq *Request, msg string) {
 	if appReq != nil {
 		slog.Helper()
-		log.Debug(r.Context(),
+		log.Debug(ctx,
 			"workspace app 404: "+msg,
 			slog.F("username_or_id", appReq.UsernameOrID),
 			slog.F("workspace_and_agent", appReq.WorkspaceAndAgent),
@@ -23,7 +24,7 @@ func WriteWorkspaceApp404(log slog.Logger, accessURL *url.URL, rw http.ResponseW
 		)
 	}
 
-	site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+	site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 		Status:       http.StatusNotFound,
 		Title:        "Application Not Found",
 		Description:  "The application or workspace you are trying to access does not exist or you do not have permission to access it.",
@@ -34,8 +35,7 @@ func WriteWorkspaceApp404(log slog.Logger, accessURL *url.URL, rw http.ResponseW
 
 // WriteWorkspaceApp500 writes a HTML 500 error page for a workspace app. If
 // appReq is not nil, it's fields will be added to the logged error message.
-func WriteWorkspaceApp500(log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, r *http.Request, appReq *Request, err error, msg string) {
-	ctx := r.Context()
+func WriteWorkspaceApp500(ctx context.Context, log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, appReq *Request, err error, msg string) {
 	if appReq != nil {
 		slog.Helper()
 		ctx = slog.With(ctx,
@@ -51,7 +51,7 @@ func WriteWorkspaceApp500(log slog.Logger, accessURL *url.URL, rw http.ResponseW
 		slog.Error(err),
 	)
 
-	site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+	site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 		Status:       http.StatusInternalServerError,
 		Title:        "Internal Server Error",
 		Description:  "An internal server error occurred.",
@@ -62,10 +62,10 @@ func WriteWorkspaceApp500(log slog.Logger, accessURL *url.URL, rw http.ResponseW
 
 // WriteWorkspaceAppOffline writes a HTML 502 error page for a workspace app. If
 // appReq is not nil, it will be used to log the request details at debug level.
-func WriteWorkspaceAppOffline(log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, r *http.Request, appReq *Request, msg string) {
+func WriteWorkspaceAppOffline(ctx context.Context, log slog.Logger, accessURL *url.URL, rw http.ResponseWriter, appReq *Request, msg string) {
 	if appReq != nil {
 		slog.Helper()
-		log.Debug(r.Context(),
+		log.Debug(ctx,
 			"workspace app unavailable: "+msg,
 			slog.F("username_or_id", appReq.UsernameOrID),
 			slog.F("workspace_and_agent", appReq.WorkspaceAndAgent),
@@ -75,7 +75,7 @@ func WriteWorkspaceAppOffline(log slog.Logger, accessURL *url.URL, rw http.Respo
 		)
 	}
 
-	site.RenderStaticErrorPage(rw, r, site.ErrorPageData{
+	site.RenderStaticErrorPage(ctx, rw, site.ErrorPageData{
 		Status:       http.StatusBadGateway,
 		Title:        "Application Unavailable",
 		Description:  msg,

@@ -3,6 +3,7 @@ package site
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"crypto/sha1" //#nosec // Not used for cryptography.
 	_ "embed"
 	"encoding/hex"
@@ -725,7 +726,7 @@ type ErrorPageData struct {
 // RenderStaticErrorPage renders the static error page. This is used by app
 // requests to avoid dependence on the dashboard but maintain the ability to
 // render a friendly error page on subdomains.
-func RenderStaticErrorPage(rw http.ResponseWriter, r *http.Request, data ErrorPageData) {
+func RenderStaticErrorPage(ctx context.Context, rw http.ResponseWriter, data ErrorPageData) {
 	type outerData struct {
 		Error ErrorPageData
 	}
@@ -735,7 +736,7 @@ func RenderStaticErrorPage(rw http.ResponseWriter, r *http.Request, data ErrorPa
 
 	err := errorTemplate.Execute(rw, outerData{Error: data})
 	if err != nil {
-		httpapi.Write(r.Context(), rw, http.StatusInternalServerError, codersdk.Response{
+		httpapi.Write(ctx, rw, http.StatusInternalServerError, codersdk.Response{
 			Message: "Failed to render error page: " + err.Error(),
 			Detail:  fmt.Sprintf("Original error was: %d %s, %s", data.Status, data.Title, data.Description),
 		})
